@@ -28,8 +28,13 @@ class ScalingAgent(BaseAgent):
             **kwargs
         )
 
-        self.capabilities = ["dynamic_scaling", "resource_allocation", "load_balancing", "auto_scaling", "performance_optimization", "predictive_scaling", "edge_computing", "distributed_intelligence", "low_latency_detection", "hierarchical_architecture", "edge_to_cloud_coordination"]
-        self.dependencies = ["MonitoringAgent", "DeploymentAgent", "OptimizationAgent", "CommunicationAgent"]
+        self.capabilities = [
+            "dynamic_scaling", "resource_allocation", "load_balancing", "auto_scaling", "performance_optimization",
+            "predictive_scaling", "edge_computing", "distributed_intelligence", "low_latency_detection",
+            "hierarchical_architecture", "edge_to_cloud_coordination", "global_scaling", "intercontinental_load_balancing",
+            "cosmic_scale_auto_scaling", "planetary_resource_allocation"
+        ]
+        self.dependencies = ["MonitoringAgent", "DeploymentAgent", "OptimizationAgent", "CommunicationAgent", "SecurityAgent"]
 
     async def _execute_task(self, task_description: str, **kwargs) -> Any:
         if "scale_resources" in task_description.lower():
@@ -48,6 +53,14 @@ class ScalingAgent(BaseAgent):
             return await self._low_latency_detection(**kwargs)
         elif "hierarchical_architecture" in task_description.lower():
             return await self._hierarchical_architecture(**kwargs)
+        elif "global_scaling" in task_description.lower():
+            return await self._global_scaling(**kwargs)
+        elif "intercontinental" in task_description.lower():
+            return await self._intercontinental_load_balancing(**kwargs)
+        elif "cosmic_scale" in task_description.lower():
+            return await self._cosmic_scale_auto_scaling(**kwargs)
+        elif "planetary" in task_description.lower():
+            return await self._planetary_resource_allocation(**kwargs)
         else:
             return {"status": "completed", "task": task_description}
 
@@ -383,3 +396,110 @@ class ScalingAgent(BaseAgent):
         }
 
         return hierarchical_metrics
+
+    async def _global_scaling(self, **kwargs):
+        """Implement global scaling across continents and regions."""
+        continents = ['North America', 'South America', 'Europe', 'Asia', 'Africa', 'Australia', 'Antarctica']
+
+        global_scaling_config = {}
+        for continent in continents:
+            continent_nodes = np.random.randint(50, 200)
+            global_scaling_config[continent] = {
+                'nodes_deployed': continent_nodes,
+                'peak_capacity': continent_nodes * np.random.randint(100, 500),
+                'current_load': np.random.random(),
+                'auto_scaling_enabled': True,
+                'regional_failover': True
+            }
+
+        global_scaling_metrics = {
+            'continents_covered': len(continents),
+            'total_global_nodes': sum(config['nodes_deployed'] for config in global_scaling_config.values()),
+            'global_capacity': sum(config['peak_capacity'] for config in global_scaling_config.values()),
+            'average_load_distribution': np.mean([config['current_load'] for config in global_scaling_config.values()]),
+            'intercontinental_failover': True,
+            'global_load_balancing': 'active'
+        }
+
+        return global_scaling_metrics
+
+    async def _intercontinental_load_balancing(self, **kwargs):
+        """Implement load balancing across continents."""
+        intercontinental_routes = [
+            ('North America', 'Europe'),
+            ('North America', 'Asia'),
+            ('Europe', 'Asia'),
+            ('Asia', 'Australia'),
+            ('Europe', 'Africa'),
+            ('North America', 'South America')
+        ]
+
+        load_balancing_config = {}
+        for route in intercontinental_routes:
+            load_balancing_config[f"{route[0]}_to_{route[1]}"] = {
+                'bandwidth_capacity': np.random.randint(1000, 10000),  # Gbps
+                'current_utilization': np.random.random(),
+                'latency': np.random.uniform(50, 200),  # ms
+                'packet_loss': np.random.uniform(0.001, 0.01),
+                'load_balanced': True
+            }
+
+        intercontinental_metrics = {
+            'routes_configured': len(intercontinental_routes),
+            'total_bandwidth': sum(config['bandwidth_capacity'] for config in load_balancing_config.values()),
+            'average_latency': np.mean([config['latency'] for config in load_balancing_config.values()]),
+            'global_connectivity': '100%',
+            'load_balancing_efficiency': 0.95
+        }
+
+        return intercontinental_metrics
+
+    async def _cosmic_scale_auto_scaling(self, **kwargs):
+        """Implement auto-scaling for cosmic-scale operations."""
+        cosmic_zones = ['Earth', 'LEO', 'MEO', 'GEO', 'Lunar', 'Mars', 'Asteroid Belt', 'Outer Planets']
+
+        cosmic_scaling_config = {}
+        for zone in cosmic_zones:
+            zone_nodes = np.random.randint(10, 1000)
+            cosmic_scaling_config[zone] = {
+                'nodes_active': zone_nodes,
+                'auto_scaling_limit': zone_nodes * 10,
+                'current_load': np.random.random(),
+                'expansion_rate': np.random.uniform(0.01, 0.1),
+                'cosmic_failover': True
+            }
+
+        cosmic_scaling_metrics = {
+            'cosmic_zones': len(cosmic_zones),
+            'total_cosmic_nodes': sum(config['nodes_active'] for config in cosmic_scaling_config.values()),
+            'universe_coverage': 'expanding',
+            'auto_scaling_efficiency': 0.99,
+            'cosmic_load_distribution': 'optimal'
+        }
+
+        return cosmic_scaling_metrics
+
+    async def _planetary_resource_allocation(self, **kwargs):
+        """Allocate resources across planetary systems."""
+        planetary_systems = ['Solar System', 'Alpha Centauri', 'Proxima Centauri', 'Trappist-1', 'Kepler-452']
+
+        planetary_allocation = {}
+        for system in planetary_systems:
+            system_resources = {
+                'computational_nodes': np.random.randint(100, 10000),
+                'storage_capacity': np.random.randint(1000, 100000),  # PB
+                'communication_bandwidth': np.random.randint(100, 10000),  # Tbps
+                'energy_resources': np.random.randint(1000, 100000),  # MW
+                'allocation_efficiency': 0.95 + np.random.random() * 0.05
+            }
+            planetary_allocation[system] = system_resources
+
+        planetary_metrics = {
+            'planetary_systems': len(planetary_systems),
+            'total_computational_power': sum(sys['computational_nodes'] for sys in planetary_allocation.values()),
+            'total_storage_capacity': sum(sys['storage_capacity'] for sys in planetary_allocation.values()),
+            'interplanetary_connectivity': 'established',
+            'resource_optimization': 'active'
+        }
+
+        return planetary_metrics

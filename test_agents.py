@@ -6,10 +6,15 @@ This script demonstrates the initialization and basic functionality
 of the multi-agent AI-NetGuard system.
 """
 
+import pytest
 import asyncio
 import logging
 import sys
 import os
+import warnings
+
+# Suppress autogen deprecation warnings
+warnings.filterwarnings('ignore', category=DeprecationWarning, module='autogen.*')
 
 # Add src to path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'src'))
@@ -17,6 +22,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'src'))
 from framework.agent_system import get_agent_system
 
 
+@pytest.mark.asyncio
 async def test_agent_system():
     """Test the agent system initialization and basic operations."""
     print("🚀 Testing AI-NetGuard Agent System")
@@ -225,20 +231,8 @@ async def test_agent_system():
     return True
 
 
-async def main():
-    """Main test function."""
-    # Setup logging
-    logging.basicConfig(
-        level=logging.INFO,
-        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-    )
-
-    # Run tests
-    success = await test_agent_system()
-
-    # Exit with appropriate code
-    sys.exit(0 if success else 1)
-
-
-if __name__ == "__main__":
-    asyncio.run(main())
+# Setup logging for tests
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)

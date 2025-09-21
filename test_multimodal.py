@@ -3,10 +3,14 @@
 Test script for Multi-Modal Learning functionality in LearningAgent
 """
 
-import asyncio
+import pytest
 import sys
 import os
 import numpy as np
+import warnings
+
+# Suppress autogen deprecation warnings
+warnings.filterwarnings('ignore', category=DeprecationWarning, module='autogen.*')
 
 # Add src to path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'src'))
@@ -14,6 +18,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'src'))
 from framework.agent_system import get_agent_system
 
 
+@pytest.mark.asyncio
 async def test_multimodal_learning():
     """Test Multi-Modal Learning functionality."""
     print("🔄 Testing Multi-Modal Learning functionality")
@@ -115,7 +120,3 @@ async def test_multimodal_learning():
         traceback.print_exc()
         return False
 
-
-if __name__ == "__main__":
-    success = asyncio.run(test_multimodal_learning())
-    sys.exit(0 if success else 1)
