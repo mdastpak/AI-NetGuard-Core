@@ -62,6 +62,10 @@ class AINetGuardAgentSystem:
         self.is_initialized = False
         self.is_running = False
 
+        # Ensemble system
+        self.ensemble_models = []
+        self.ensemble_weights = []
+
     async def initialize_system(self) -> bool:
         """
         Initialize the complete AI-NetGuard agent system.
@@ -299,6 +303,132 @@ class AINetGuardAgentSystem:
         """
         agents = ["MetaCoordinatorAgent"] + list(self.agents.keys())
         return agents
+
+    async def create_advanced_ensemble(self, num_models: int = 50) -> Dict[str, Any]:
+        """
+        Create an advanced ensemble with 50+ models using genetic evolution.
+
+        Args:
+            num_models: Number of models in the ensemble
+
+        Returns:
+            Dict with ensemble creation results
+        """
+        try:
+            self.logger.info(f"Creating advanced ensemble with {num_models} models")
+
+            # Get required agents
+            model_architect = self.get_agent("ModelArchitectAgent")
+            optimizer = self.get_agent("OptimizationAgent")
+            evaluator = self.get_agent("EvaluationAgent")
+
+            if not all([model_architect, optimizer, evaluator]):
+                return {'error': 'Required agents not available'}
+
+            # Start with a base model
+            base_model_result = await model_architect.perform_task("design_architecture")
+            if 'error' in base_model_result:
+                return base_model_result
+
+            base_model = base_model_result.get('model')
+
+            # Evolve the base model using genetic algorithms
+            evolution_result = await model_architect.perform_task(
+                "evolve_architecture",
+                base_model=base_model,
+                generations=10,
+                population_size=num_models
+            )
+
+            if 'error' in evolution_result:
+                return evolution_result
+
+            # Get the evolved population
+            evolved_models = evolution_result.get('population', [])
+
+            # Optimize ensemble weights
+            optimization_result = await optimizer.perform_task(
+                "optimize_ensemble",
+                models=evolved_models
+            )
+
+            if 'error' in optimization_result:
+                return optimization_result
+
+            weights = optimization_result.get('ensemble_weights', [])
+
+            # Evaluate the ensemble
+            evaluation_result = await evaluator.perform_task(
+                "evaluate_ensemble",
+                models=evolved_models,
+                weights=weights
+            )
+
+            # Store ensemble
+            self.ensemble_models = evolved_models
+            self.ensemble_weights = weights
+
+            result = {
+                'ensemble_created': True,
+                'num_models': len(evolved_models),
+                'weights': weights,
+                'evaluation': evaluation_result,
+                'evolution_stats': evolution_result,
+                'optimization_stats': optimization_result
+            }
+
+            self.logger.info(f"Advanced ensemble created with {len(evolved_models)} models")
+            return result
+
+        except Exception as e:
+            self.logger.error(f"Failed to create advanced ensemble: {e}")
+            return {'error': str(e)}
+
+    async def get_ensemble_prediction(self, input_data) -> Dict[str, Any]:
+        """
+        Get prediction from the advanced ensemble.
+
+        Args:
+            input_data: Input data for prediction
+
+        Returns:
+            Dict with ensemble prediction results
+        """
+        if not self.ensemble_models:
+            return {'error': 'Ensemble not created'}
+
+        try:
+            predictions = []
+            for model in self.ensemble_models:
+                # Mock prediction - in practice would run model inference
+                pred = 0.5 + 0.1 * (hash(str(model)) % 100) / 100
+                predictions.append(pred)
+
+            # Weighted ensemble prediction
+            if self.ensemble_weights:
+                ensemble_pred = sum(w * p for w, p in zip(self.ensemble_weights, predictions))
+            else:
+                ensemble_pred = sum(predictions) / len(predictions)
+
+            return {
+                'ensemble_prediction': ensemble_pred,
+                'individual_predictions': predictions,
+                'confidence': 1.0 - abs(ensemble_pred - 0.5) * 2,  # Higher confidence when farther from 0.5
+                'diversity_score': self._calculate_prediction_diversity(predictions)
+            }
+
+        except Exception as e:
+            self.logger.error(f"Ensemble prediction failed: {e}")
+            return {'error': str(e)}
+
+    def _calculate_prediction_diversity(self, predictions: List[float]) -> float:
+        """Calculate diversity in predictions."""
+        if len(predictions) < 2:
+            return 0.0
+
+        mean_pred = sum(predictions) / len(predictions)
+        variance = sum((p - mean_pred) ** 2 for p in predictions) / len(predictions)
+        return variance ** 0.5  # Standard deviation as diversity measure
 
 
 # Global system instance

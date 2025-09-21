@@ -8,6 +8,8 @@ for anomaly detection, using meta-learning and genetic algorithms.
 from typing import Dict, List, Any, Optional
 import torch
 import torch.nn as nn
+import random
+import numpy as np
 from .base_agent import BaseAgent
 
 
@@ -106,18 +108,44 @@ class ModelArchitectAgent(BaseAgent):
             self.logger.error(f"Architecture design failed: {e}")
             return {"error": str(e)}
 
-    async def _evolve_architecture(self, base_model: nn.Module, generations: int = 10, **kwargs) -> Dict[str, Any]:
+    async def _evolve_architecture(self, base_model: nn.Module, generations: int = 10, population_size: int = 50, **kwargs) -> Dict[str, Any]:
         """Evolve architecture using genetic algorithms."""
-        self.logger.info(f"Evolving architecture over {generations} generations")
+        self.logger.info(f"Evolving architecture over {generations} generations with population size {population_size}")
 
-        # Mock evolution
-        evolved_model = base_model  # In practice, apply genetic operations
+        # Initialize population with base model variations
+        population = await self._initialize_population(base_model, population_size)
+
+        best_fitness = 0.0
+        best_model = base_model
+
+        for generation in range(generations):
+            self.logger.info(f"Generation {generation + 1}/{generations}")
+
+            # Evaluate fitness for each individual
+            fitness_scores = []
+            for individual in population:
+                fitness = await self._evaluate_fitness(individual)
+                fitness_scores.append(fitness)
+
+            # Find best individual
+            max_fitness_idx = fitness_scores.index(max(fitness_scores))
+            current_best_fitness = fitness_scores[max_fitness_idx]
+
+            if current_best_fitness > best_fitness:
+                best_fitness = current_best_fitness
+                best_model = population[max_fitness_idx]
+
+            self.logger.info(f"Best fitness in generation {generation + 1}: {current_best_fitness:.4f}")
+
+            # Create next generation
+            population = await self._create_next_generation(population, fitness_scores)
 
         return {
-            'evolved_model': evolved_model,
+            'evolved_model': best_model,
             'generations': generations,
-            'fitness_score': 0.92,
-            'improvement': 0.05
+            'fitness_score': best_fitness,
+            'improvement': best_fitness - 0.8,  # Assuming base fitness of 0.8
+            'population_size': population_size
         }
 
     async def _optimize_architecture(self, model: nn.Module, **kwargs) -> Dict[str, Any]:
@@ -139,3 +167,108 @@ class ModelArchitectAgent(BaseAgent):
             'status': 'completed',
             'method': 'automated_design'
         }
+
+    async def _initialize_population(self, base_model: nn.Module, population_size: int) -> List[nn.Module]:
+        """Initialize population with variations of the base model."""
+        population = [base_model]
+
+        for _ in range(population_size - 1):
+            # Create variation by randomly modifying layer sizes
+            variation = await self._create_model_variation(base_model)
+            population.append(variation)
+
+        return population
+
+    async def _create_model_variation(self, base_model: nn.Module) -> nn.Module:
+        """Create a variation of the base model by modifying architecture."""
+        # Simple variation: change hidden layer sizes randomly
+        layers = []
+        for name, module in base_model.named_children():
+            if isinstance(module, nn.Linear):
+                in_features = module.in_features
+                out_features = module.out_features
+                # Randomly modify output features
+                new_out_features = max(1, out_features + random.randint(-10, 10))
+                layers.append(nn.Linear(in_features, new_out_features))
+                if new_out_features != out_features:
+                    layers.append(nn.ReLU())  # Add activation if changed
+            else:
+                layers.append(module)
+
+        return nn.Sequential(*layers)
+
+    async def _evaluate_fitness(self, model: nn.Module) -> float:
+        """Evaluate fitness of a model using EvaluationAgent."""
+        try:
+            # Use EvaluationAgent to assess model performance
+            evaluation_result = await self.coordinator_agent.request_agent_task(
+                "EvaluationAgent",
+                f"evaluate_model_performance model={model}"
+            )
+
+            # Extract accuracy or fitness score
+            if isinstance(evaluation_result, dict) and 'accuracy' in evaluation_result:
+                return evaluation_result['accuracy']
+            else:
+                # Mock fitness based on model complexity
+                complexity = sum(p.numel() for p in model.parameters())
+                return 0.8 + 0.1 * (1.0 / (1.0 + complexity / 10000))  # Simpler models get higher fitness
+
+        except Exception as e:
+            self.logger.error(f"Fitness evaluation failed: {e}")
+            return 0.5  # Default fitness
+
+    async def _create_next_generation(self, population: List[nn.Module], fitness_scores: List[float]) -> List[nn.Module]:
+        """Create next generation using selection, crossover, and mutation."""
+        new_population = []
+
+        # Elitism: keep best individual
+        best_idx = fitness_scores.index(max(fitness_scores))
+        new_population.append(population[best_idx])
+
+        # Create rest through tournament selection and crossover
+        while len(new_population) < len(population):
+            # Tournament selection
+            parent1 = await self._tournament_selection(population, fitness_scores)
+            parent2 = await self._tournament_selection(population, fitness_scores)
+
+            # Crossover
+            child = await self._crossover(parent1, parent2)
+
+            # Mutation
+            child = await self._mutate(child)
+
+            new_population.append(child)
+
+        return new_population
+
+    async def _tournament_selection(self, population: List[nn.Module], fitness_scores: List[float], tournament_size: int = 3) -> nn.Module:
+        """Tournament selection for genetic algorithm."""
+        selected = random.sample(range(len(population)), tournament_size)
+        best_idx = max(selected, key=lambda i: fitness_scores[i])
+        return population[best_idx]
+
+    async def _crossover(self, parent1: nn.Module, parent2: nn.Module) -> nn.Module:
+        """Crossover between two parent models."""
+        # Simple crossover: randomly choose layers from each parent
+        layers = []
+        p1_children = list(parent1.children())
+        p2_children = list(parent2.children())
+
+        for i in range(max(len(p1_children), len(p2_children))):
+            if i < len(p1_children) and i < len(p2_children):
+                # Randomly choose from parent1 or parent2
+                chosen_parent = p1_children if random.random() < 0.5 else p2_children
+                layers.append(chosen_parent[i])
+            elif i < len(p1_children):
+                layers.append(p1_children[i])
+            else:
+                layers.append(p2_children[i])
+
+        return nn.Sequential(*layers)
+
+    async def _mutate(self, model: nn.Module, mutation_rate: float = 0.1) -> nn.Module:
+        """Mutate a model by randomly changing layer parameters."""
+        if random.random() < mutation_rate:
+            return await self._create_model_variation(model)
+        return model

@@ -153,8 +153,64 @@ async def test_agent_system():
             print(f"   👍 Positive votes: {consensus_result.get('positive_votes', 0)}")
             print(f"   📊 Total votes: {consensus_result.get('total_votes', 0)}")
 
+        # Test inter-agent communication
+        print("\n📡 Testing inter-agent communication...")
+
+        # Test direct communication between agents
+        data_agent = agent_system.get_agent("DataSynthesisAgent")
+        feat_agent = agent_system.get_agent("FeatureEngineeringAgent")
+
+        if data_agent and feat_agent:
+            # Test direct communication
+            comm_result = await data_agent.communicate(
+                feat_agent,
+                "Hello from DataSynthesisAgent! Can you process this data request?"
+            )
+            print(f"✅ Direct communication: {comm_result.get('success', False)}")
+
+            # Check message history
+            data_health = await data_agent.health_check()
+            feat_health = await feat_agent.health_check()
+            print(f"   📨 DataSynthesisAgent messages: {data_health.get('message_count', 0)}")
+            print(f"   📨 FeatureEngineeringAgent messages: {feat_health.get('message_count', 0)}")
+
+        # Test broadcast messaging
+        if coordinator:
+            broadcast_result = await coordinator.broadcast_message(
+                "System-wide broadcast test message",
+                coordinator
+            )
+            print(f"✅ Broadcast messaging: {broadcast_result.get('broadcast_success', False)}")
+            print(f"   📢 Messages sent to {broadcast_result.get('targets_reached', 0)} agents")
+
+        # Test communication error handling
+        print("\n🔧 Testing communication error handling...")
+
+        # Try to communicate with non-existent agent
+        fake_agent = type('FakeAgent', (), {'name': 'NonExistentAgent'})()
+        error_result = await data_agent.communicate(fake_agent, "This should fail")
+        print(f"✅ Error handling: {not error_result.get('success', True)} (expected failure)")
+
+        # Test communication with inactive agent (if any)
+        # Note: All agents are currently active, but this tests the framework
+
+        # Check message history integrity
+        print("\n📋 Checking message history integrity...")
+        all_agents = agent_system.list_agents()
+        total_messages = 0
+        for agent_name in all_agents:
+            agent = agent_system.get_agent(agent_name)
+            if agent:
+                health = await agent.health_check()
+                msg_count = health.get('message_count', 0)
+                total_messages += msg_count
+                if msg_count > 0:
+                    print(f"   📝 {agent_name}: {msg_count} messages in history")
+
+        print(f"   📊 Total messages exchanged: {total_messages}")
+
         # Shutdown system
-        print("\n🛑 Shutting down agent system...")
+        print("\n� Shutting down agent system...")
         shutdown_success = await agent_system.shutdown_system()
         print(f"✅ Shutdown successful: {shutdown_success}")
 
